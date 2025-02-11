@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.20; // No cambiar la versión de Solidity
-
 import "hardhat/console.sol";
 import "./ExampleExternalContract.sol";
+
+
 
 contract Staker {
     // Variables de estado
@@ -17,16 +18,16 @@ contract Staker {
 
     constructor(address exampleExternalContractAddress) {
         exampleExternalContract = ExampleExternalContract(exampleExternalContractAddress);
-        deadline = block.timestamp + 7 days; // Plazo de 7 días para alcanzar el umbral.
+        deadline = block.timestamp + 7 days; // Cambiado de 30 segundos a 7 días
         owner = msg.sender; // Guarda la dirección del creador del contrato.
     }
 
     // Función para depositar ETH en el contrato
     function stake() external payable {
         require(block.timestamp < deadline, "Staking period over");
-        require(msg.value > 0, "Must send ETH to stake"); // Corregido "msg.valuye" -> "msg.value"
+        require(msg.value > 0, "Must send ETH to stake"); 
         
-        balances[msg.sender] += msg.value; // Corregido "= +msg.value" -> "+="
+        balances[msg.sender] += msg.value;
         emit Stake(msg.sender, msg.value);
     }
 
@@ -49,7 +50,7 @@ contract Staker {
         require(!executed, "Already executed");
         
         executed = true;
-        exampleExternalContract.complete{value: address(this).balance}(); // Corregido "exampledExternalContract" -> "exampleExternalContract"
+        exampleExternalContract.complete{value: address(this).balance}();
     }
 
     // Función para consultar el balance del contrato
@@ -58,15 +59,21 @@ contract Staker {
     }
 
     // Función para consultar el tiempo restante antes del deadline
-    function timeLeft() external view returns (uint256) { // Agregado "view" y "returns (uint256)"
+    function timeLeft() external view returns (uint256) {
         if (block.timestamp >= deadline) {
             return 0;
         }
         return deadline - block.timestamp;
     }
 
-    // Función especial para recibir ETH y automáticamente llamar a stake()
+    // Función especial para recibir ETH y automáticamente registrar el stake
     receive() external payable {
-        stake();
+        require(block.timestamp < deadline, "Staking period over");
+        require(msg.value > 0, "Must send ETH to stake");
+
+        balances[msg.sender] += msg.value;
+        emit Stake(msg.sender, msg.value);
     }
 }
+
+
